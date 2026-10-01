@@ -2,32 +2,47 @@ import streamlit as st
 import ccxt
 import pandas as pd
 
-# Page Setup
-st.set_page_config(page_title="Crypto Multi-Exchange Scanner", layout="wide")
+# Page Setup - Optimized for Mobile
+st.set_page_config(page_title="Crypto Multi-Exchange Scanner", layout="wide", initial_sidebar_state="collapsed")
 
-# Styling for Cards/Boxes
+# Mobile Responsive Advanced Box Styling
 st.markdown("""
     <style>
-    .stMetric {
-        background-color: #1e222d;
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #2a2e39;
+    .metric-card {
+        background: linear-gradient(135deg, #1e222d 0%, #2a2e39 100%);
+        border: 1px solid #363c4e;
+        border-radius: 12px;
+        padding: 15px;
         text-align: center;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .metric-label {
+        font-size: 12px;
+        color: #8f9cae;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .metric-value {
+        font-size: 22px;
+        font-weight: bold;
+        color: #ffffff;
+        margin-top: 5px;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("📊 Multi-Exchange Crypto Scanner")
 
-# Fixed Exchanges Map (Correct CCXT Attributes)
+# Fixed Exchanges Map
 EXCHANGES_MAP = {
     'Binance': ccxt.binance,
     'Bybit': ccxt.bybit,
     'OKX': ccxt.okx,
     'MEXC': ccxt.mexc,
     'KuCoin': ccxt.kucoin,
-    'Gate.io': ccxt.gate,   # Fixed: 'gateio' replaced with 'gate'
+    'Gate.io': ccxt.gate,
     'Bitget': ccxt.bitget,
     'BingX': ccxt.bingx
 }
@@ -68,25 +83,45 @@ st.subheader("⚙️ Scan Settings")
 selected_exchanges = st.multiselect("Exchanges Choose Karein", list(EXCHANGES_MAP.keys()), default=['Binance', 'Bybit', 'OKX', 'MEXC'])
 timeframe = st.selectbox("Timeframe", ['15m', '1h', '4h', '1d'], index=1)
 tolerance = st.slider("Tolerance Gap (%)", 0.1, 2.0, 0.5)
-max_coins_per_ex = st.number_input("Total Coins Limit (Per Exchange)", min_value=5, max_value=500, value=50, step=5)
+
+# Default Coins Limit Set to 500
+max_coins_per_ex = st.number_input("Total Top Coins Limit (Per Exchange)", min_value=10, max_value=1000, value=500, step=50)
 
 st.markdown("---")
 
-# Top 3 Advanced Summary Boxes
+# Mobile Advanced Summary Boxes Containers
 col1, col2, col3 = st.columns(3)
+
 with col1:
     box_total = st.empty()
-    box_total.metric(label="TOTAL SIGNALS", value="0")
+    box_total.markdown("""
+        <div class="metric-card">
+            <div class="metric-label">TOTAL SIGNALS</div>
+            <div class="metric-value">0</div>
+        </div>
+    """, unsafe_allow_html=True)
+
 with col2:
     box_support = st.empty()
-    box_support.metric(label="🟢 SUPPORTS", value="0")
+    box_support.markdown("""
+        <div class="metric-card">
+            <div class="metric-label">🟢 SUPPORTS</div>
+            <div class="metric-value" style="color: #00e676;">0</div>
+        </div>
+    """, unsafe_allow_html=True)
+
 with col3:
     box_resistance = st.empty()
-    box_resistance.metric(label="🔴 RESISTANCES", value="0")
+    box_resistance.markdown("""
+        <div class="metric-card">
+            <div class="metric-label">🔴 RESISTANCES</div>
+            <div class="metric-value" style="color: #ff5252;">0</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Scan Button Execution
+# Scan Execution
 if st.button("🚀 Start Scanning Now", use_container_width=True):
     if not selected_exchanges:
         st.error("Khabardar! Kam se kam ek exchange select karein.")
@@ -96,7 +131,6 @@ if st.button("🚀 Start Scanning Now", use_container_width=True):
         support_count = 0
         resistance_count = 0
 
-        # Progress bar aur status text initialization
         progress_bar = st.progress(0)
         status_text = st.empty()
         
@@ -107,14 +141,15 @@ if st.button("🚀 Start Scanning Now", use_container_width=True):
             try:
                 exchange_obj = EXCHANGES_MAP[ex_name]()
                 markets = exchange_obj.load_markets()
+                
+                # Fetch Top Volume USDT Pairs (Top 500 Coins)
                 usdt_pairs = [symbol for symbol in markets if symbol.endswith('/USDT')][:max_coins_per_ex]
                 
                 for symbol in usdt_pairs:
                     current_step += 1
-                    # Progress Percentage update
                     progress_percent = int((current_step / total_steps) * 100)
                     progress_bar.progress(min(progress_percent, 100))
-                    status_text.text(f"Scanning... {progress_percent}% completed | Exchange: {ex_name} | Pair: {symbol}")
+                    status_text.text(f"Scanning Top Coins... {progress_percent}% | {ex_name} | Pair: {symbol}")
 
                     try:
                         bars = exchange_obj.fetch_ohlcv(symbol, timeframe=timeframe, limit=5)
@@ -131,10 +166,27 @@ if st.button("🚀 Start Scanning Now", use_container_width=True):
                             
                             total_signals += 1
 
-                            # Update summary boxes real-time
-                            box_total.metric(label="TOTAL SIGNALS", value=str(total_signals))
-                            box_support.metric(label="🟢 SUPPORTS", value=str(support_count))
-                            box_resistance.metric(label="🔴 RESISTANCES", value=str(resistance_count))
+                            # Update Advanced Mobile Cards Real-time
+                            box_total.markdown(f"""
+                                <div class="metric-card">
+                                    <div class="metric-label">TOTAL SIGNALS</div>
+                                    <div class="metric-value">{total_signals}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            box_support.markdown(f"""
+                                <div class="metric-card">
+                                    <div class="metric-label">🟢 SUPPORTS</div>
+                                    <div class="metric-value" style="color: #00e676;">{support_count}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            box_resistance.markdown(f"""
+                                <div class="metric-card">
+                                    <div class="metric-label">🔴 RESISTANCES</div>
+                                    <div class="metric-value" style="color: #ff5252;">{resistance_count}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
 
                             results.append({
                                 "Exchange": ex_name,
@@ -148,11 +200,9 @@ if st.button("🚀 Start Scanning Now", use_container_width=True):
             except Exception as e:
                 st.warning(f"{ex_name} connect karne mein error aya: {e}")
 
-        # Completion Status
         progress_bar.progress(100)
         status_text.success("Scan Completed 100%!")
 
-        # Results Table Display
         if results:
             st.subheader("📋 Detected Signals Result Table")
             res_df = pd.DataFrame(results)
