@@ -1,12 +1,11 @@
 import streamlit as st
 import ccxt
 import pandas as pd
-import time
 
 # Page Setup
 st.set_page_config(page_title="Crypto Multi-Exchange Scanner", layout="wide")
 
-# Styling
+# Styling for Cards/Boxes
 st.markdown("""
     <style>
     .stMetric {
@@ -21,14 +20,14 @@ st.markdown("""
 
 st.title("📊 Multi-Exchange Crypto Scanner")
 
-# Exchange List
+# Fixed Exchanges Map (Correct CCXT Attributes)
 EXCHANGES_MAP = {
     'Binance': ccxt.binance,
     'Bybit': ccxt.bybit,
     'OKX': ccxt.okx,
     'MEXC': ccxt.mexc,
     'KuCoin': ccxt.kucoin,
-    'Gate.io': ccxt.gateio,
+    'Gate.io': ccxt.gate,   # Fixed: 'gateio' replaced with 'gate'
     'Bitget': ccxt.bitget,
     'BingX': ccxt.bingx
 }
@@ -40,7 +39,7 @@ def analyze_candlesticks(df, tolerance_pct=0.5):
     prev = df.iloc[-2]
     curr = df.iloc[-1]
 
-    # Bullish Engulfing Support
+    # 1. Bullish Engulfing Support
     is_prev_bearish = prev['close'] < prev['open']
     is_curr_bullish = curr['close'] > curr['open']
     is_bullish_engulfing = is_prev_bearish and is_curr_bullish and (curr['close'] >= prev['open']) and (curr['open'] <= prev['close'])
@@ -51,7 +50,7 @@ def analyze_candlesticks(df, tolerance_pct=0.5):
         if gap <= tolerance_pct:
             return "SUPPORT_BULLISH_ENGULFING", support_level
 
-    # Bearish Engulfing Resistance
+    # 2. Bearish Engulfing Resistance
     is_prev_bullish = prev['close'] > prev['open']
     is_curr_bearish = curr['close'] < curr['open']
     is_bearish_engulfing = is_prev_bullish and is_curr_bearish and (curr['open'] >= prev['close']) and (curr['close'] <= prev['open'])
@@ -66,14 +65,14 @@ def analyze_candlesticks(df, tolerance_pct=0.5):
 
 # Input Settings Controls
 st.subheader("⚙️ Scan Settings")
-selected_exchanges = st.multiselect("Exchanges Choose Karo", list(EXCHANGES_MAP.keys()), default=['Binance', 'Bybit', 'OKX', 'MEXC'])
+selected_exchanges = st.multiselect("Exchanges Choose Karein", list(EXCHANGES_MAP.keys()), default=['Binance', 'Bybit', 'OKX', 'MEXC'])
 timeframe = st.selectbox("Timeframe", ['15m', '1h', '4h', '1d'], index=1)
 tolerance = st.slider("Tolerance Gap (%)", 0.1, 2.0, 0.5)
 max_coins_per_ex = st.number_input("Total Coins Limit (Per Exchange)", min_value=5, max_value=500, value=50, step=5)
 
 st.markdown("---")
 
-# 3 Summary Boxes (Screen Top Bar)
+# Top 3 Advanced Summary Boxes
 col1, col2, col3 = st.columns(3)
 with col1:
     box_total = st.empty()
@@ -90,18 +89,17 @@ st.markdown("---")
 # Scan Button Execution
 if st.button("🚀 Start Scanning Now", use_container_width=True):
     if not selected_exchanges:
-        st.error("Krapeena koi ek Exchange select karo!")
+        st.error("Khabardar! Kam se kam ek exchange select karein.")
     else:
         results = []
         total_signals = 0
         support_count = 0
         resistance_count = 0
 
-        # Progress bar and status line setup
+        # Progress bar aur status text initialization
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        # Calculate total pairs to process
         total_steps = len(selected_exchanges) * max_coins_per_ex
         current_step = 0
 
@@ -148,9 +146,9 @@ if st.button("🚀 Start Scanning Now", use_container_width=True):
                     except Exception:
                         continue
             except Exception as e:
-                st.warning(f"Error loading {ex_name}: {e}")
+                st.warning(f"{ex_name} connect karne mein error aya: {e}")
 
-        # Scan completion status
+        # Completion Status
         progress_bar.progress(100)
         status_text.success("Scan Completed 100%!")
 
@@ -160,4 +158,4 @@ if st.button("🚀 Start Scanning Now", use_container_width=True):
             res_df = pd.DataFrame(results)
             st.dataframe(res_df, use_container_width=True)
         else:
-            st.warning("Aa settings par koi signal nathi malyo.")
+            st.warning("In settings par koi signal nahi mila.")
